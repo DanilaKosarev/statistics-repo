@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.DTO.TeamSummaryDataDto;
 import org.example.models.PlayerInfo;
 import org.example.models.TeamInfo;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,8 @@ class AppTest {
     private final String aTeamName = "AName";
     private final String bTeamName = "BName";
     private final String cTeamName = "CName";
+    private final String teamNameLessGoalsCount = "lessGoalsTeamName";
+    private final String teamNameEvenLessGoalsCount = "evenLessGoalsCountTeamName";
 
     private final String playerNameLessPenalties = "playerWithSameGoalsCountButLessPenalties";
     private final String playerNameMorePenalties = "playerWithSameGoalsCountButMorePenalties";
@@ -29,7 +32,9 @@ class AppTest {
     private final Map<String, TeamInfo> teamsMap = Map.ofEntries(
             entry(aTeamName, new TeamInfo(aTeamName, teamGoalsCount, 0)),
             entry(bTeamName, new TeamInfo(bTeamName, teamGoalsCount, 0)),
-            entry(cTeamName, new TeamInfo(cTeamName, teamGoalsCount, 0))
+            entry(cTeamName, new TeamInfo(cTeamName, teamGoalsCount, 0)),
+            entry(teamNameLessGoalsCount, new TeamInfo(teamNameLessGoalsCount, teamGoalsCount - 5, 0)),
+            entry(teamNameEvenLessGoalsCount, new TeamInfo(teamNameEvenLessGoalsCount, teamGoalsCount - 9, 0))
     );
 
     private final Map<String, PlayerInfo> playersMap = Map.ofEntries(
@@ -37,7 +42,9 @@ class AppTest {
             entry("playerName2", new PlayerInfo(playerNameLessPenalties, aTeamName, playerGoalsCount, 0)),
             entry("playerName3", new PlayerInfo("playerName3", bTeamName, playerGoalsCount, 10)),
             entry("playerName4", new PlayerInfo(playerNameLessPenalties, bTeamName, playerGoalsCount, 0)),
-            entry("playerName5", new PlayerInfo(playerNameMorePenalties, cTeamName, playerGoalsCount, 10))
+            entry("playerName5", new PlayerInfo("playerName5", cTeamName, playerGoalsCount, 0)),
+            entry("playerName6", new PlayerInfo(playerNameMorePenalties, teamNameLessGoalsCount, playerGoalsCount, 10)),
+            entry("playerName7", new PlayerInfo("playerName7", teamNameEvenLessGoalsCount, playerGoalsCount, 10))
     );
 
     @Test
@@ -60,6 +67,20 @@ class AppTest {
     }
 
     @Test
+    void teamsShouldBeSortedByGoalsCount() throws IOException {
+        //given
+        StatisticsAggregator.setTeamsMap(teamsMap);
+        StatisticsAggregator.setPlayersMap(playersMap);
+
+        //when
+        StatisticsAggregator.generateStatistics();
+
+        //then
+        assertThat(StatisticsAggregator.getResultStatistics().get(StatisticsAggregator.getResultStatistics().size() - 2).getTeamName()).isEqualTo(teamNameLessGoalsCount);
+        assertThat(StatisticsAggregator.getResultStatistics().get(StatisticsAggregator.getResultStatistics().size() - 1).getTeamName()).isEqualTo(teamNameEvenLessGoalsCount);
+    }
+
+    @Test
     void teamsWithSameGoalsCountShouldBeSortedByAlphabet() throws IOException {
         //given
         StatisticsAggregator.setTeamsMap(teamsMap);
@@ -72,6 +93,19 @@ class AppTest {
         assertThat(StatisticsAggregator.getResultStatistics().get(0).getTeamName()).isEqualTo(aTeamName);
         assertThat(StatisticsAggregator.getResultStatistics().get(1).getTeamName()).isEqualTo(bTeamName);
         assertThat(StatisticsAggregator.getResultStatistics().get(2).getTeamName()).isEqualTo(cTeamName);
+    }
+
+    @Test
+    void playersShouldBeSortedByGoalsCount() throws IOException {
+        //when
+        StatisticsAggregator.extractDataFromFile(filename);
+        StatisticsAggregator.generateStatistics();
+
+        //then
+        for(TeamSummaryDataDto teamSummaryDto : StatisticsAggregator.getResultStatistics()){
+            String currentTeamName = teamSummaryDto.getTeamName();
+            assertThat(StatisticsAggregator.getPlayersList().stream().filter(p -> p.getTeamName().equals(currentTeamName)).sorted().findFirst().get().getPlayerName()).isEqualTo(StatisticsAggregator.getResultStatistics().stream().filter(t -> t.getTeamName().equals(currentTeamName)).findFirst().get().getTopPlayerSummary().getPlayerName());
+        }
     }
 
     @Test
