@@ -61,7 +61,7 @@ public class TeamSummaryDataDto {
         this.topPlayerSummary = topPlayerSummary;
     }
 
-    private class PlayerSummary{
+    public class PlayerSummary {
 
         @JsonProperty("name")
         private String playerName;
